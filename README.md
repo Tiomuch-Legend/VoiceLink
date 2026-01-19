@@ -10,12 +10,7 @@ VoiceLink is a desktop application that allows you to control your computer usin
 - [About](#about)  
 - [Features](#features)  
 - [Installation](#installation)  
-- [Usage](#usage)  
-- [Configuration](#configuration)  
-- [Examples](#examples)  
-- [Contribution](#contribution)  
-- [License](#license)  
-- [Contact](#contact)  
+
 
 ---
 
