@@ -1,4 +1,4 @@
 from multiprocessing import Value
 
-def create_shared_state():
-    return Value('b', False)
+vision_enabled = Value('b', False)
+running_flag = Value('b', True)
