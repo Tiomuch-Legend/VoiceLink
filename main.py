@@ -1,24 +1,22 @@
 from multiprocessing import Process
-from app.shared_state import create_shared_state
+from app.shared_state import vision_enabled, running_flag
 import app.cv as cv
 import app.voiceLink as voiceLink
 
 if __name__ == "__main__":
-    vision_enabled = create_shared_state()
+    # Start CV and voice assistant
+    p_cv = Process(target=cv.main, args=(vision_enabled, running_flag))
+    p_voice = Process(target=voiceLink.main, args=(vision_enabled, running_flag))
 
-    # Start CV (mouse control) and voice assistant in separate processes
-    p1 = Process(target=cv.main, args=(vision_enabled,))
-    p2 = Process(target=voiceLink.main, args=(vision_enabled,))
-
-    p1.start()
-    p2.start()
+    p_cv.start()
+    p_voice.start()
 
     try:
-        p1.join()
-        p2.join()
+        p_cv.join()
+        p_voice.join()
     except KeyboardInterrupt:
-        # Terminate both processes if user presses CTRL+C
-        p1.terminate()
-        p2.terminate()
-        p1.join()
-        p2.join()
+        running_flag.value = False
+        p_cv.terminate()
+        p_voice.terminate()
+        p_cv.join()
+        p_voice.join()
