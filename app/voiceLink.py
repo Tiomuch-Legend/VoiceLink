@@ -18,7 +18,7 @@ import pyperclip
 
 
 #safe settings
-RMS_THRESHOLD = 500
+RMS_THRESHOLD = 600
 MIN_TEXT_LEN = 3
 COMMAND_COOLDOWN = 1.2
 
@@ -28,9 +28,9 @@ if sys.stdout.encoding.lower() != 'utf-8':
 
 
 APP_REGISTRY = {
-    "блокнот": "notepad.exe",
-    "калькулятор": "calc.exe",
-    "малюнок": "mspaint.exe",
+    "notepad": "notepad.exe",
+    "calculator": "calc.exe",
+    "paint": "mspaint.exe",
 }
 
 LAUNCHED_PROCESSES = []
@@ -39,33 +39,6 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 
 
 # tts using edge_tts
-
-async def generate_tts_to_file(text, filename):
-    communicate = edge_tts.Communicate(text, voice="uk-UA-PolinaNeural")
-    await communicate.save(filename)
-
-
-def speak_sync(text):
-    if not text:
-        return
-
-    print(text, flush=True)
-
-    tts_file = "temp_tts.mp3"
-    asyncio.run(generate_tts_to_file(text, tts_file))
-
-    pygame.mixer.init()
-    pygame.mixer.music.load(tts_file)
-    pygame.mixer.music.play()
-
-    while pygame.mixer.music.get_busy():
-        time.sleep(0.1)
-
-    pygame.mixer.quit()
-    os.remove(tts_file)
-
-
-# audio
 
 def record_audio(duration=5, sample_rate=16000):
     audio = sd.rec(
@@ -92,8 +65,8 @@ def transcribe_audio(audio_path):
         transcription = groq_client.audio.transcriptions.create(
             model="whisper-large-v3",
             file=f,
-            language="uk",
-            prompt="Це українська мова."
+            language="en",
+            prompt="This is English speech."
         )
     return transcription.text
 
@@ -108,12 +81,12 @@ def interpret_command(user_text):
         messages=[{
             "role": "user",
             "content": (
-                "Ти голосовий помічник для ПК. "
-                "Класифікуй команду у JSON з ключами: intent, value. "
+                "You are a PC voice assistant. "
+                "Classify the command strictly into JSON with keys: intent, value. "
                 "Intents: open_app, type_text, type_telegram, question, exit, "
                 "start_mouse, pause_mouse, resume_mouse. "
-                "Поверни строгий JSON.\n"
-                f"Команда користувача: {user_text}"
+                "Return strict JSON only.\n"
+                f"User command: {user_text}"
             )
         }]
     )
@@ -130,7 +103,10 @@ def interpret_command(user_text):
 def answer_question(question):
     chat = groq_client.chat.completions.create(
         model="openai/gpt-oss-120b",
-        messages=[{"role": "user", "content": f"Відповідай коротко українською: {question}"}]
+        messages=[{
+            "role": "user",
+            "content": f"Answer briefly in English: {question}"
+        }]
     )
     return chat.choices[0].message.content.strip()
 
@@ -154,10 +130,10 @@ def open_application(app_name):
             LAUNCHED_PROCESSES.append((proc, APP_REGISTRY[app_name]))
         except Exception:
             open_via_start_menu(app_name)
-        return f"Відкриваю {app_name}"
+        return f"Opening {app_name}"
 
     open_via_start_menu(app_name)
-    return f"Намагаюся відкрити {app_name}"
+    return f"Trying to open {app_name}"
 
 
 def focus_app_window(app_title, wait_time=1):
@@ -179,7 +155,7 @@ def type_text_anywhere(text, delay=2):
     except Exception:
         pyautogui.write(text, interval=0.03)
 
-    return "Друкую текст"
+    return "Typing text"
 
 
 def type_text_in_telegram(text):
@@ -193,9 +169,9 @@ def type_text_in_telegram(text):
             pyautogui.write(text, interval=0.03)
 
         pyautogui.press("enter")
-        return "Повідомлення надіслано"
+        return "Message sent"
 
-    return "Telegram не знайдено"
+    return "Telegram not found"
 
 
 # executing function
@@ -215,15 +191,15 @@ def execute_intent(intent, value, vision_enabled, running_flag):
 
     elif intent == "start_mouse":
         vision_enabled.value = True
-        return "Управління мишею увімкнено"
+        return "Mouse control enabled"
 
     elif intent == "pause_mouse":
         vision_enabled.value = False
-        return "Управління мишею вимкнено"
+        return "Mouse control disabled"
 
     elif intent == "resume_mouse":
         vision_enabled.value = True
-        return "Управління мишею відновлено"
+        return "Mouse control resumed"
 
     elif intent == "exit":
         running_flag.value = False
@@ -232,7 +208,7 @@ def execute_intent(intent, value, vision_enabled, running_flag):
             if proc.poll() is None:
                 proc.terminate()
 
-        return "До побачення"
+        return "Goodbye"
 
     return None
 
@@ -240,7 +216,7 @@ def execute_intent(intent, value, vision_enabled, running_flag):
 # main loop
 
 def main(vision_enabled, running_flag):
-    speak_sync("Голосовий асистент до ваших послуг!")
+    speak_sync("Voice assistant at your service!")
 
     last_command_time = 0
 
@@ -284,4 +260,4 @@ def main(vision_enabled, running_flag):
             time.sleep(0.15)
 
         except Exception as e:
-            print("Помилка:", str(e), flush=True)
+            print("Error:", str(e), flush=True)
