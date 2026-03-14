@@ -18,7 +18,7 @@ import pyperclip
 
 
 #safe settings
-RMS_THRESHOLD = 500
+RMS_THRESHOLD = 600
 MIN_TEXT_LEN = 3
 COMMAND_COOLDOWN = 1.2
 
