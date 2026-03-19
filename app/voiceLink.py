@@ -40,6 +40,33 @@ groq_client = Groq(api_key=GROQ_API_KEY)
 
 # tts using edge_tts
 
+async def generate_tts_to_file(text, filename):
+    communicate = edge_tts.Communicate(text, voice="en-US-AriaNeural")
+    await communicate.save(filename)
+
+
+def speak_sync(text):
+    if not text:
+        return
+
+    print(text, flush=True)
+
+    tts_file = "temp_tts.mp3"
+    asyncio.run(generate_tts_to_file(text, tts_file))
+
+    pygame.mixer.init()
+    pygame.mixer.music.load(tts_file)
+    pygame.mixer.music.play()
+
+    while pygame.mixer.music.get_busy():
+        time.sleep(0.1)
+
+    pygame.mixer.quit()
+    os.remove(tts_file)
+
+
+# audio
+
 def record_audio(duration=5, sample_rate=16000):
     audio = sd.rec(
         int(duration * sample_rate),
@@ -66,7 +93,7 @@ def transcribe_audio(audio_path):
             model="whisper-large-v3",
             file=f,
             language="en",
-            prompt="This is English speech."
+            prompt="This is English."
         )
     return transcription.text
 
@@ -103,10 +130,7 @@ def interpret_command(user_text):
 def answer_question(question):
     chat = groq_client.chat.completions.create(
         model="openai/gpt-oss-120b",
-        messages=[{
-            "role": "user",
-            "content": f"Answer briefly in English: {question}"
-        }]
+        messages=[{"role": "user", "content": f"Answer briefly in English: {question}"}]
     )
     return chat.choices[0].message.content.strip()
 
@@ -130,7 +154,7 @@ def open_application(app_name):
             LAUNCHED_PROCESSES.append((proc, APP_REGISTRY[app_name]))
         except Exception:
             open_via_start_menu(app_name)
-        return f"Opening {app_name}"
+        return f"Opening  {app_name}"
 
     open_via_start_menu(app_name)
     return f"Trying to open {app_name}"
@@ -199,7 +223,7 @@ def execute_intent(intent, value, vision_enabled, running_flag):
 
     elif intent == "resume_mouse":
         vision_enabled.value = True
-        return "Mouse control resumed"
+        return "Mouse control enabled"
 
     elif intent == "exit":
         running_flag.value = False
@@ -208,7 +232,7 @@ def execute_intent(intent, value, vision_enabled, running_flag):
             if proc.poll() is None:
                 proc.terminate()
 
-        return "Goodbye"
+        return "See you later"
 
     return None
 
@@ -260,4 +284,4 @@ def main(vision_enabled, running_flag):
             time.sleep(0.15)
 
         except Exception as e:
-            print("Error:", str(e), flush=True)
+            print("Помилка:", str(e), flush=True)
